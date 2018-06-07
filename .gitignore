@@ -1,0 +1,40 @@
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# models and data
+logs/
+saved_models/
+datasets/
+
+# pickle
+*.p
+
+# keras
+*.h5
+
+# pytorch
+*.pt
+
+# tensorflow
+checkpoint
+*.data-*
+*.index
+*.meta
+
+# code for trying things out
+experimental/
+scratchpad.ipynb
+mnist-mlp-train.ipynb
+mnist-cnn-train.ipynb
+
+# cluster submission scripts
+*submit.sh
+*array.sh
+*train.sh
+
