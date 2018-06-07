@@ -1,6 +1,7 @@
 # Uncertainty Estimation in Bayesian Neural Networks and Links to Interpretability
 
 MLSALT thesis project
+** currently just a private repository ** 
 
 ## Summary
 
