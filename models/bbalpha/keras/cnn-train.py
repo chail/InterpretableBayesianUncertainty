@@ -3,6 +3,8 @@
 
 from toolbox import load_dataset
 
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
 from keras import backend as K
 from keras.callbacks import Callback
 from keras.models import Model
@@ -39,6 +41,11 @@ else:
     print("Unrecognized dataset, use 'mnist', 'cifar10', or 'svhn'")
     print("Exiting...")
     exit()
+
+# otherwise TF grabs all available gpu memory
+config = tf.ConfigProto()
+config.gpu_options.allow_growth=True
+set_session(tf.Session(config=config))
 
 # constants
 nb_train = train[0].shape[0]
@@ -85,11 +92,11 @@ directory = os.path.join('saved_models',
                          '{}-cnn-alpha{}-run{}'.format(dataset, alpha, run))
 os.makedirs(directory, exist_ok=True)
 results = defaultdict(list)
-max_acc = 0.
-max_acc_ep = 0
+min_val = float('inf')
+min_val_ep = 0
 ep = 0
 
-while ep < max(2 * max_acc_ep, epochs):
+while ep < max(2 * min_val_ep, epochs):
 # while ep < 1:
     tic = timer()
     history = model.fit(train[0], train_Y_dup,
@@ -111,17 +118,17 @@ while ep < max(2 * max_acc_ep, epochs):
     results['val_avg_acc'].extend(history.history['val_metric_avg_acc'])
     results['val_ll'].extend(history.history['val_metric_avg_ll'])
 
-    val_avg_acc = results['val_avg_acc'][-1]
-    if val_avg_acc > max_acc:
-        max_acc = val_avg_acc
-        max_acc_ep = ep
-        print("Updating max_acc_ep: {}".format(max_acc_ep))
+    val_bbalpha_loss = results['val_bbalpha_loss'][-1]
+    if val_bbalpha_loss < min_val:
+        min_val = val_bbalpha_loss
+        min_val_ep = ep
+        print("Updating min_val_ep: {}".format(min_val_ep))
 
         # save the model
         tic = timer()
         model.save(os.path.join(directory, 'model.h5'))
         toc = timer()
-    print("Max_acc_ep: {}\t Max_acc: {:.3f}".format(max_acc_ep, max_acc))
+    print("Min_val_ep: {}\t Min_val: {:.3f}".format(min_val_ep, min_val))
     ep += 1
 
     # save result after every epoch

@@ -42,6 +42,9 @@ K_mc = 10
 learning_rate = 0.01
 epochs = 30
 
+# otherwise TF grabs all available gpu memory
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
 
 # create the datasets with placeholder
 batch_size_ph = tf.placeholder(tf.int64, name='batch_size_ph')
@@ -238,7 +241,7 @@ with tf.Session() as sess:
 
             # save the model
             tic = timer()
-            save_meta = True if ep == 0 else False
+            save_meta = ep == 0
             save_path = saver.save(sess,
                                    "./saved_models/mnist-mlp-alpha{}-run{}/model"
                                    .format(alpha, run), write_meta_graph=save_meta)
