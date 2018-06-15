@@ -78,7 +78,6 @@ mc_logits = GenerateMCSamples(inp, layers, K_mc) # repeats stochastic layers K_m
 # if alpha = 0.0, bbalpha returns categorical cross entropy with logits
 loss_function = bbalpha_softmax_cross_entropy_with_mc_logits(alpha)
 model = Model(inputs=inp, outputs=mc_logits)
-# TODO: change the optimizer
 opt = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(optimizer=opt, loss=loss_function,
               metrics=['accuracy', loss_function, metric_avg_acc, metric_avg_ll])
@@ -97,7 +96,6 @@ min_val_ep = 0
 ep = 0
 
 while ep < max(2 * min_val_ep, epochs):
-# while ep < 1:
     tic = timer()
     history = model.fit(train[0], train_Y_dup,
                         verbose=1, batch_size=batch_size,
@@ -134,3 +132,10 @@ while ep < max(2 * min_val_ep, epochs):
     # save result after every epoch
     with open(os.path.join(directory, 'results.p'), 'wb') as f:
         pickle.dump(results, f)
+
+
+# load the last saved model and add uncertainties in a tf graph
+filepath = os.path.join(directory, 'model.h5')
+outputpath = os.path.join(directory, 'model_w_uncertainty')
+K_mc_test = 100
+add_uncertainty_to_model(filepath, outputpath, K_mc_test)

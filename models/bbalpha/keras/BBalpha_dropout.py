@@ -1,5 +1,5 @@
 '''
-Modified from code by:
+Parts of this code modified from:
 Yingzhen Li and Yarin Gal.
 Dropout inference in Bayesian neural networks with alpha-divergences.
 International Conference on Machine Learning (ICML), 2017.
@@ -15,10 +15,12 @@ from keras.regularizers import l2
 from keras.utils import np_utils
 from keras import metrics
 import numpy as np
-import os, pickle, sys, time
+
+from keras.models import load_model
+import tensorflow as tf
 
 ###################################################################
-# aux functions
+# keras aux functions
 
 def Dropout_mc(p):
     layer = Lambda(lambda x: K.dropout(x, p), output_shape=lambda shape: shape)
@@ -162,3 +164,59 @@ def get_logit_cnn_layers(nb_units, p, wd, nb_classes, layers = [], dropout = Fal
     layers.append(Dense(nb_classes, kernel_regularizer=l2(wd)))
     return layers
 
+###################################################################
+# adding uncertainty outputs to the model in tf
+
+def MC_dropout(model, x, n_mc):
+    pred_mc = model(x) # N x K x D
+    if n_mc > 1:
+        pred = tf.reduce_mean(pred_mc, 1)
+    else:
+        pred = pred_mc
+    return (tf.identity(pred_mc, name='pred_mc'),
+            tf.identity(pred, name='pred'))
+
+def tf_log2(x):
+    numerator = tf.log(x)
+    denominator = tf.log(tf.constant(2, dtype=numerator.dtype))
+    return numerator / denominator
+
+def add_uncertainty_to_model(filepath, output_path, K_mc_test):
+
+    sess = tf.InteractiveSession()
+
+    model = load_model(filepath,
+                       custom_objects={'bbalpha_loss':
+                                       bbalpha_softmax_cross_entropy_with_mc_logits(0.5),
+                                       'metric_avg_acc': metric_avg_acc,
+                                       'metric_avg_ll': metric_avg_ll})
+    input_shape = model.layers[0].input_shape[1:] # remove None dimension
+    inp = Input(shape=input_shape)
+    # repeat stochastic layers K_mc_test times (omit input and pack_out layers)
+    mc_logits = GenerateMCSamples(inp, model.layers[1:-1], K_mc_test)
+    # softmax over the final dim of output
+    mc_softmax = Activation('softmax', name='softmax')(mc_logits)
+    # output of test_model is N x K_mc_test x C
+    test_model = Model(inputs=inp, outputs=mc_softmax)
+
+    x = tf.placeholder(tf.float32, shape=(None,) + input_shape, name='x_ph')
+    pred_mc, predictions = MC_dropout(test_model, x, n_mc=K_mc_test)
+
+    # predictive
+    plogp = predictions * tf_log2(tf.clip_by_value(predictions,1e-10,1.0))
+    predictive_uncertainty = - tf.reduce_sum(plogp, axis=1,
+                                             name='predictive_uncertainty')
+
+    # aleatoric
+    plogp_mc = pred_mc * tf_log2(tf.clip_by_value(pred_mc,1e-10,1.0))
+    aleatoric_uncertainty = - 1 / K_mc_test * tf.reduce_sum(plogp_mc, axis=(1,2))
+    aleatoric_uncertainty = tf.identity(aleatoric_uncertainty,
+                                        name='aleatoric_uncertainty')
+
+    # epistemic
+    epistemic_uncertainty = tf.identity(predictive_uncertainty
+                                        - aleatoric_uncertainty,
+                                        name='epistemic_uncertainty')
+
+    saver = tf.train.Saver()
+    save_path = saver.save(sess, output_path, write_meta_graph=True)
