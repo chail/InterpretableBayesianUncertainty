@@ -43,9 +43,14 @@ else:
     exit()
 
 # otherwise TF grabs all available gpu memory
+if not hasattr(K, "tf"):
+    raise RuntimeError("This code requires keras to be configured"
+                       " to use the TensorFlow backend.")
+
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True
 set_session(tf.Session(config=config))
+
 
 # constants
 nb_train = train[0].shape[0]
