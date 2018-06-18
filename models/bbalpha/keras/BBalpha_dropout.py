@@ -204,8 +204,9 @@ def add_uncertainty_to_model(filepath, output_path, K_mc_test):
 
     # predictive
     plogp = predictions * tf_log2(tf.clip_by_value(predictions,1e-10,1.0))
-    predictive_uncertainty = - tf.reduce_sum(plogp, axis=1,
-                                             name='predictive_uncertainty')
+    predictive_uncertainty = - tf.reduce_sum( plogp, axis=1)
+    predictive_uncertainty = tf.identity(predictive_uncertainty,
+                                         name='predictive_uncertainty')
 
     # aleatoric
     plogp_mc = pred_mc * tf_log2(tf.clip_by_value(pred_mc,1e-10,1.0))
