@@ -8,77 +8,45 @@ from keras.backend.tensorflow_backend import set_session
 from keras import backend as K
 from keras.models import Model
 from keras import optimizers
-from keras.layers import Input
 import numpy as np
 import os
 import pickle
 import sys
 from timeit import default_timer as timer
 from collections import defaultdict
+from collections import Counter
 from BBalpha_dropout import *
 
-if len(sys.argv) != 3:
+
+if len(sys.argv) != 5:
     print("Call this program like this:\n"
-          "    ./cnn-train-mnist.py run frac\n"
-          "    e.g. ./cnn-train-mnist.py 1 0.1\n"
-          "This task classifies 3's from 8's. Frac specifies"
-          "the fraction of total 3's used in training and validation"
-          )
+          "    ./cnn-train-frac.py dataset alpha run frac\n"
+          "    e.g. ./cnn-train-frac.py mnist 0.5 1 0.1\n"
+          "Dataset is either ['mnist', 'cifar10', 'svhn']\n"
+          "Frac is the fraction of training data to train on")
     exit()
 
 # extract command line arguments
-dataset = 'mnist'
-alpha = 0.5
-run = sys.argv[1]
-frac = float(sys.argv[2])
+dataset = sys.argv[1]
+alpha = float(sys.argv[2])
+run = sys.argv[3]
+frac = float(sys.argv[4])
 
 train, validation, _ = load_dataset.load_image_data(dataset,
                                                     channels_first=False)
 
-# extract 3's and 8's, will try to classify these 2 digits
-train_3_ind = np.where(np.argmax(train[1], axis=1) == 3)
-train_8_ind = np.where(np.argmax(train[1], axis=1) == 8)
-train_8 = (train[0][train_8_ind], train[1][train_8_ind][:, [3, 8]])
+# take a fraction of the training data
+n = train[0].shape[0]
+n_frac = int(n * frac)
+perm_ind = np.random.permutation(n)
+train_perm = (train[0][perm_ind], train[1][perm_ind])
+train = (train_perm[0][:n_frac], train_perm[1][:n_frac])
 
-validation_3_ind = np.where(np.argmax(validation[1], axis=1) == 3)
-validation_8_ind = np.where(np.argmax(validation[1], axis=1) == 8)
-validation_8 = (validation[0][validation_8_ind],
-                validation[1][validation_8_ind][:, [3, 8]])
-
-# take a fraction of 3's from train and val
-n_3_total_train = len(train_3_ind[0])
-n_3_frac_train = int(n_3_total_train * frac)
-frac_ind_3_train = train_3_ind[0][:n_3_frac_train]
-train_3_frac = (train[0][frac_ind_3_train],
-                train[1][frac_ind_3_train][:, [3, 8]])
-
-n_3_total_validation = len(validation_3_ind[0])
-n_3_frac_validation = int(n_3_total_validation * frac)
-frac_ind_3_validation = validation_3_ind[0][:n_3_frac_validation]
-validation_3_frac = (validation[0][frac_ind_3_validation],
-                     validation[1][frac_ind_3_validation][:, [3, 8]])
-
-# train and val sets are all 8's and a fraction of 3's
-train = (np.concatenate((train_8[0], train_3_frac[0]), axis=0),
-         np.concatenate((train_8[1], train_3_frac[1]), axis=0))
-validation = (np.concatenate((validation_8[0], validation_3_frac[0]), axis=0),
-              np.concatenate((validation_8[1], validation_3_frac[1]), axis=0))
-
-# permute data
-n_train = n_3_frac_train + len(train_8_ind[0])
-n_val = n_3_frac_validation + len(validation_8_ind[0])
-perm_train = np.random.permutation(n_train)
-perm_val = np.random.permutation(n_val)
-train = (train[0][perm_train], train[1][perm_train])
-validation = (validation[0][perm_val], validation[1][perm_val])
-
-print("Number of 8's: in training: {} in validation: {}"
-      .format(train_8[1].shape[0], validation_8[1].shape[0]))
-print("Number of 3's: in training: {} in validation: {}"
-      .format(train_3_frac[1].shape[0], validation_3_frac[1].shape[0]))
-print("Training data shape: x:{} y:{}".format(train[0].shape, train[1].shape))
-print("Val data shape: x:{} y:{}".format(validation[0].shape,
-                                         validation[1].shape))
+print("Taking {} of training data...".format(frac))
+print("Items in each class:")
+labels = list(np.argmax(train[1], axis=1))
+label_count = Counter(labels)
+[print("Class {}: {}".format(key, label_count[key])) for key in label_count]
 
 
 # otherwise TF grabs all available gpu memory
@@ -96,7 +64,7 @@ nb_train = train[0].shape[0]
 nb_val = validation[0].shape[0]
 input_dim = (train[0].shape[1], train[0].shape[2])
 input_channels = train[0].shape[3]
-nb_classes = 2  # just 2 classes, 3 and 8
+nb_classes = train[1].shape[1]
 
 batch_size = 128
 nb_layers = 2
@@ -106,7 +74,7 @@ wd = 1e-6
 
 K_mc = 10
 
-epochs = 5
+epochs = 30
 
 # model layers
 assert K.image_data_format() == 'channels_last', \
@@ -116,7 +84,7 @@ inp = Input(shape=input_shape)
 layers = get_logit_cnn_layers(nb_units, p, wd, nb_classes, layers=[])
 
 # build model with MC samples
-mc_logits = GenerateMCSamples(inp, layers, K_mc)  # repeats stochastic layers K_mc times
+mc_logits = GenerateMCSamples(inp, layers, K_mc) # repeats stochastic layers K_mc times
 # if alpha = 0.0, bbalpha returns categorical cross entropy with logits
 loss_function = bbalpha_softmax_cross_entropy_with_mc_logits(alpha)
 model = Model(inputs=inp, outputs=mc_logits)
@@ -129,11 +97,10 @@ train_Y_dup = np.squeeze(np.concatenate(K_mc * [train[1][:, None]], axis=1)) # N
 val_Y_dup = np.squeeze(np.concatenate(K_mc * [validation[1][:, None]], axis=1)) # N x K_mc x D
 
 # training loop
-directory = os.path.join('saved_models',
+directory = os.path.join('saved_models_train_frac',
                          '{}-cnn-alpha{}-run{}'.format(dataset, alpha, run),
                          'frac{:.1f}'.format(frac))
 os.makedirs(directory, exist_ok=True)
-
 results = defaultdict(list)
 min_val = float('inf')
 min_val_ep = 0
@@ -143,7 +110,7 @@ while ep < max(2 * min_val_ep, epochs):
     tic = timer()
     history = model.fit(train[0], train_Y_dup,
                         verbose=1, batch_size=batch_size,
-                        initial_epoch = ep, epochs=ep+1,
+                        initial_epoch=ep, epochs=ep+1,
                         validation_data=(validation[0], val_Y_dup))
     toc = timer()
     results['train_N'].append(train[0].shape[0])
