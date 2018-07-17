@@ -39,7 +39,6 @@ nb_layers = 2
 nb_units = 100
 p = 0.5
 wd = 1e-6
-dropout = 'MC'
 
 K_mc = 10
 
@@ -48,8 +47,8 @@ epochs = 30
 # model layers
 input_shape = (input_dim, ) # (dimX, )
 inp = Input(shape=input_shape)
-layers = get_logit_mlp_layers(nb_layers, nb_units, p, wd, nb_classes, layers = [],
-                              dropout=dropout)
+layers = get_logit_mlp_layers(nb_layers, nb_units, p, wd, nb_classes,
+                              layers = [])
 
 # build model with MC samples
 mc_logits = GenerateMCSamples(inp, layers, K_mc) # repeats stochastic layers K_mc times

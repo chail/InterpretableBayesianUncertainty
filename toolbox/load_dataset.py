@@ -80,6 +80,39 @@ def load_cifar10(channels_first=False, val_frac=0.1):
             (x_val, y_val),
             (x_test, y_test))
 
+def load_cifar100(channels_first=False, val_frac=0.1):
+    """
+    Loads cifar100 data
+    Cifar100 dataset cached in ~/.keras/datasets
+    """
+    (x_train, y_train), (x_test, y_test) = \
+            keras.datasets.cifar100.load_data(label_mode='coarse')
+
+    y_train = np_utils.to_categorical(y_train, 20)
+    y_test = np_utils.to_categorical(y_test, 20)
+    x_train = x_train / 255
+    x_test = x_test / 255
+
+    # create validation partition
+    np.random.seed(0)
+    n = x_train.shape[0]
+    nb_val = int(val_frac * n)
+    indices = np.random.permutation(n)
+    val_idx, training_idx = indices[:nb_val], indices[nb_val:]
+    x_train, x_val = x_train[training_idx,:], x_train[val_idx,:]
+    y_train, y_val = y_train[training_idx,:], y_train[val_idx,:]
+
+    # reshaping 
+    if channels_first:
+        x_train = np.transpose(x_train, axes=(0, 3, 1, 2))
+        x_val = np.transpose(x_val, axes=(0, 3, 1, 2))
+        x_test = np.transpose(x_test, axes=(0, 3, 1, 2))
+
+    return ((x_train, y_train),
+            (x_val, y_val),
+            (x_test, y_test))
+
+
 def load_svhn(channels_first=False, val_frac=0.1):
     """
     Loads SVHN data
@@ -143,4 +176,79 @@ def load_svhn(channels_first=False, val_frac=0.1):
             (x_val, y_val),
             (x_test, y_test))
 
+
+def load_image_data(dataset, channels_first=False):
+    '''
+    load train, val, test images and labels of the dataset
+    Input:  dataset         string of either 'mnist', 'cifar10', 'cifar100', 'svhn'
+            channels_first  if true, shape of returned images is
+                            (n, channels, height, width),
+                            otherwise (n, height, width, channels)
+    Returns:
+        tuple of (train, val, test) splits containing image data and one-hot
+        labels
+            images are the first element of each split, e.g. train[0]
+            labels are the second element of each split, e.g. train[1]
+    '''
+    if dataset == 'mnist':
+        return load_mnist(False, channels_first)
+    elif dataset == 'cifar10':
+        return load_cifar10(channels_first)
+    elif dataset == 'cifar100':
+        return load_cifar100(channels_first)
+    elif dataset == 'svhn':
+        return load_svhn(channels_first)
+    else:
+        return None
+
+
+def load_image_labels(dataset):
+    '''
+    Input:  dataset         string of either 'mnist', 'cifar10', 'cifar100', 'svhn'
+    Returns:
+        list of label names for the provided dataset
+    '''
+    if dataset == 'mnist':
+        return [str(x) for x in range(10)]
+    elif dataset == 'cifar10':
+        return ['airplane', 'automobile', 'bird', 'cat', 'deer',
+                'dog', 'frog', 'horse', 'ship', 'truck']
+    elif dataset == 'cifar100':
+        return ['aquatic mammals', 'fish', 'flowers', 'food containers',
+                'fruit and vegetables', 'household electrical devices',
+                'household furniture', 'insects', 'large carnivores',
+                'large man-made outdoor things',
+                'large natural outdoor scenes',
+                'large omnivores and herbivores',
+                'medium-sized mammals', 'non-insect invertebrates',
+                'people', 'reptiles', 'small mammals', 'trees', 'vehicles 1',
+                'vehicles 2']
+    elif dataset == 'svhn':
+        return [str(x) for x in range(10)]
+    else:
+        return None
+
+
+
+def load_cats(channels_first=False):
+
+    from skimage import io
+    directory = os.path.join(ROOT_DIR, 'datasets', 'cats', 'resized')
+    cats = [io.imread(os.path.join(directory, f))
+            for f in os.listdir(directory)]
+    cats = np.stack(cats, axis=0)
+    print(cats.shape)
+
+    cats = cats / 255
+    print(np.max(cats))
+    print(np.min(cats))
+
+    if channels_first:
+        cats = np.transpose(cats, axes=(0, 3, 1, 2))
+
+    n = cats.shape[0]
+    y = np.zeros((n, 10))
+    y[:, 3] = 1 # cat label in cifar 10
+
+    return cats, y
 

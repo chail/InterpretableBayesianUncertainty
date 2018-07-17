@@ -17,23 +17,27 @@ from keras import metrics
 import numpy as np
 
 from keras.models import load_model
-import tensorflow as tf
+
+
+# TODO clear comments
+
 
 ###################################################################
 # keras aux functions
 
-def Dropout_mc(p):
-    layer = Lambda(lambda x: K.dropout(x, p), output_shape=lambda shape: shape)
+def Dropout_mc(p, noise_shape=None):
+    layer = Lambda(lambda x: K.dropout(x, p, noise_shape=noise_shape),
+                   output_shape=lambda shape: shape)
     return layer
 
-def Identity(p):
-    layer = Lambda(lambda x: x, output_shape=lambda shape: shape)
-    return layer
-
-# deterministic: scales the outputs by 1-p
-def pW(p):
-    layer = Lambda(lambda x: x*(1.0-p), output_shape=lambda shape: shape)
-    return layer
+#def Identity(p):
+#    layer = Lambda(lambda x: x, output_shape=lambda shape: shape)
+#    return layer
+#
+## deterministic: scales the outputs by 1-p
+#def pW(p):
+#    layer = Lambda(lambda x: x*(1.0-p), output_shape=lambda shape: shape)
+#    return layer
 
 def apply_layers(inp, layers):
     output = inp
@@ -115,15 +119,9 @@ def metric_avg_ll(y_true, y_pred):
 ###################################################################
 # the model
 
-def get_logit_mlp_layers(nb_layers, nb_units, p, wd, nb_classes, layers = [], \
-                         dropout = 'none'):
-    if dropout == 'MC':
-        D = Dropout_mc
-    if dropout == 'pW':
-        D = pW
-    if dropout == 'none':
-        D = Identity
-        
+def get_logit_mlp_layers(nb_layers, nb_units, p, wd, nb_classes, layers = []):
+    D = Dropout_mc
+
     # USING THE LAMBDA FUNCTIONS ENSURES THAT THERE IS DROPOUT AT TEST AND TRAIN TIME
 
     for _ in range(nb_layers):
@@ -133,7 +131,7 @@ def get_logit_mlp_layers(nb_layers, nb_units, p, wd, nb_classes, layers = [], \
     layers.append(Dense(nb_classes, kernel_regularizer=l2(wd))) # these are logit activations!
     return layers
 
-def get_logit_cnn_layers(nb_units, p, wd, nb_classes, layers = [], dropout = False):
+def get_logit_cnn_layers(nb_units, p, wd, nb_classes, layers = []):
     # number of convolutional filters to use
     nb_filters = 32
     # size of pooling area for max pooling
@@ -141,12 +139,7 @@ def get_logit_cnn_layers(nb_units, p, wd, nb_classes, layers = [], dropout = Fal
     # convolution kernel size
     kernel_size = (3, 3)
 
-    if dropout == 'MC':
-        D = Dropout_mc
-    if dropout == 'pW':
-        D = pW
-    if dropout == 'none':
-        D = Identity
+    D = Dropout_mc
 
     layers.append(Conv2D(nb_filters, (kernel_size[0], kernel_size[1]),
                                 padding='valid', kernel_regularizer=l2(wd)))
@@ -164,28 +157,69 @@ def get_logit_cnn_layers(nb_units, p, wd, nb_classes, layers = [], dropout = Fal
     layers.append(Dense(nb_classes, kernel_regularizer=l2(wd)))
     return layers
 
+####################################################################
+## adding uncertainty outputs to the model in tf
+#
+#def MC_dropout(model, x, n_mc):
+#    pred_mc = model(x) # N x K x D
+#    if n_mc > 1:
+#        pred = tf.reduce_mean(pred_mc, 1)
+#    else:
+#        pred = pred_mc
+#    return (tf.identity(pred_mc, name='pred_mc'),
+#            tf.identity(pred, name='pred'))
+#
+#def tf_log2(x):
+#    numerator = tf.log(x)
+#    denominator = tf.log(tf.constant(2, dtype=numerator.dtype))
+#    return numerator / denominator
+#
+#def add_uncertainty_to_model(filepath, output_path, K_mc_test):
+#
+#    sess = tf.InteractiveSession()
+#
+#    model = load_model(filepath,
+#                       custom_objects={'bbalpha_loss':
+#                                       bbalpha_softmax_cross_entropy_with_mc_logits(0.5),
+#                                       'metric_avg_acc': metric_avg_acc,
+#                                       'metric_avg_ll': metric_avg_ll})
+#    input_shape = model.layers[0].input_shape[1:] # remove None dimension
+#    inp = Input(shape=input_shape)
+#    # repeat stochastic layers K_mc_test times (omit input and pack_out layers)
+#    mc_logits = GenerateMCSamples(inp, model.layers[1:-1], K_mc_test)
+#    # softmax over the final dim of output
+#    mc_softmax = Activation('softmax', name='softmax')(mc_logits)
+#    # output of test_model is N x K_mc_test x C
+#    test_model = Model(inputs=inp, outputs=mc_softmax)
+#
+#    x = tf.placeholder(tf.float32, shape=(None,) + input_shape, name='x_ph')
+#    pred_mc, predictions = MC_dropout(test_model, x, n_mc=K_mc_test)
+#
+#    # predictive
+#    plogp = predictions * tf_log2(tf.clip_by_value(predictions,1e-10,1.0))
+#    predictive_uncertainty = - tf.reduce_sum( plogp, axis=1)
+#    predictive_uncertainty = tf.identity(predictive_uncertainty,
+#                                         name='predictive_uncertainty')
+#
+#    # aleatoric
+#    plogp_mc = pred_mc * tf_log2(tf.clip_by_value(pred_mc,1e-10,1.0))
+#    aleatoric_uncertainty = - 1 / K_mc_test * tf.reduce_sum(plogp_mc, axis=(1,2))
+#    aleatoric_uncertainty = tf.identity(aleatoric_uncertainty,
+#                                        name='aleatoric_uncertainty')
+#
+#    # epistemic
+#    epistemic_uncertainty = tf.identity(predictive_uncertainty
+#                                        - aleatoric_uncertainty,
+#                                        name='epistemic_uncertainty')
+#
+#    saver = tf.train.Saver()
+#    save_path = saver.save(sess, output_path, write_meta_graph=True)
+    
 ###################################################################
-# adding uncertainty outputs to the model in tf
+# adding build model with K_mc_test MC samples from dropout distribution
 
-def MC_dropout(model, x, n_mc):
-    pred_mc = model(x) # N x K x D
-    if n_mc > 1:
-        pred = tf.reduce_mean(pred_mc, 1)
-    else:
-        pred = pred_mc
-    return (tf.identity(pred_mc, name='pred_mc'),
-            tf.identity(pred, name='pred'))
-
-def tf_log2(x):
-    numerator = tf.log(x)
-    denominator = tf.log(tf.constant(2, dtype=numerator.dtype))
-    return numerator / denominator
-
-def add_uncertainty_to_model(filepath, output_path, K_mc_test):
-
-    sess = tf.InteractiveSession()
-
-    model = load_model(filepath,
+def build_test_model(modelpath, K_mc_test, dropout_p):
+    model = load_model(modelpath,
                        custom_objects={'bbalpha_loss':
                                        bbalpha_softmax_cross_entropy_with_mc_logits(0.5),
                                        'metric_avg_acc': metric_avg_acc,
@@ -193,31 +227,23 @@ def add_uncertainty_to_model(filepath, output_path, K_mc_test):
     input_shape = model.layers[0].input_shape[1:] # remove None dimension
     inp = Input(shape=input_shape)
     # repeat stochastic layers K_mc_test times (omit input and pack_out layers)
-    mc_logits = GenerateMCSamples(inp, model.layers[1:-1], K_mc_test)
+    layers = model.layers[1:-1]
+    # noise_shape with 0th dim of 1 keeps same dropout mask across
+    # each test sample: the test samples will the same image,
+    # with single patches replaced with draws from p(x_i | x_{-i})
+    # so same dropout mask needs to be applied for those
+    # or it will be a single image, in which case mask is irrelevant
+    for ii, layer in enumerate(layers):
+        if 'lambda' in layer.name:
+            noise_shape = (1,) + layers[ii-1].output_shape[1:] # omit N dim
+            layers[ii] = Dropout_mc(dropout_p, noise_shape=noise_shape)
+            print("Replacing Layer {}...noise shape: {}"
+                  .format(ii, noise_shape))
+    mc_logits = GenerateMCSamples(inp, layers, K_mc_test)
     # softmax over the final dim of output
     mc_softmax = Activation('softmax', name='softmax')(mc_logits)
     # output of test_model is N x K_mc_test x C
     test_model = Model(inputs=inp, outputs=mc_softmax)
-
-    x = tf.placeholder(tf.float32, shape=(None,) + input_shape, name='x_ph')
-    pred_mc, predictions = MC_dropout(test_model, x, n_mc=K_mc_test)
-
-    # predictive
-    plogp = predictions * tf_log2(tf.clip_by_value(predictions,1e-10,1.0))
-    predictive_uncertainty = - tf.reduce_sum( plogp, axis=1)
-    predictive_uncertainty = tf.identity(predictive_uncertainty,
-                                         name='predictive_uncertainty')
-
-    # aleatoric
-    plogp_mc = pred_mc * tf_log2(tf.clip_by_value(pred_mc,1e-10,1.0))
-    aleatoric_uncertainty = - 1 / K_mc_test * tf.reduce_sum(plogp_mc, axis=(1,2))
-    aleatoric_uncertainty = tf.identity(aleatoric_uncertainty,
-                                        name='aleatoric_uncertainty')
-
-    # epistemic
-    epistemic_uncertainty = tf.identity(predictive_uncertainty
-                                        - aleatoric_uncertainty,
-                                        name='epistemic_uncertainty')
-
-    saver = tf.train.Saver()
-    save_path = saver.save(sess, output_path, write_meta_graph=True)
+    output_path = modelpath.rsplit('.', 1)
+    output_path = output_path[0] + '-test.' + output_path[-1]
+    test_model.save(output_path)
