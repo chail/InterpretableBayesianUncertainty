@@ -105,7 +105,7 @@ wd = 1e-6
 
 K_mc = 10
 
-epochs = 30
+epochs = 5
 
 # model layers
 assert K.image_data_format() == 'channels_last', \
@@ -138,8 +138,7 @@ min_val = float('inf')
 min_val_ep = 0
 ep = 0
 
-# while ep < max(2 * min_val_ep, epochs):
-while ep < 5:
+while ep < max(2 * min_val_ep, epochs):
     tic = timer()
     history = model.fit(train[0], train_Y_dup,
                         verbose=1, batch_size=batch_size,
