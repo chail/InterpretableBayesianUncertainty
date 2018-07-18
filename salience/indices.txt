@@ -1,0 +1,43 @@
+Indices of some interesting test examples for each dataset:
+
+1) MNIST
+- examples with high categorical softmax of the predicted class:
+6860, 6858, 6846, 6830, 6828, 6824, 6823, 6814, 6804, 9999
+- examples with low categorical softmax of the predicted class:
+5888, 1414, 1319, 3853, 4078, 9679, 1039, 8246, 2488, 1247
+- examples with high epistemic uncertainty
+2293, 2369, 1790, 4078, 1737, 4571, 1247, 9679, 3778, 3853
+- examples with high aleatoric uncertainty
+2995, 2109, 3060, 6625, 659, 1790, 1039, 3030, 9692, 1414
+- examples with low epistemic uncertainty and predicted softmax < 0.6
+1621, 2447, 2953, 3726, 4536, 4860, 9642, 9692
+- examples with low aleatoric uncertainty and predicted softmax < 0.6
+2118, 2329, 2462, 3767, 4615, 4814, 5331, 6597
+
+2) CIFAR10
+- examples with high categorical softmax of the predicted class:
+3385, 6159,  571, 9554, 9814, 4663, 3717, 3889, 8150, 3101
+- examples with low categorical softmax of the predicted class:
+1696, 5730, 3459, 2246, 4170, 5166, 6933, 6901, 6072, 2843
+- examples with high epistemic uncertainty
+8469, 7897, 2186, 7406, 2264, 8787, 7181, 5774, 731, 4442
+- examples with high aleatoric uncertainty
+5730, 4111, 583, 5198, 5680, 8962, 6901, 266, 9107, 4758
+- examples with low epistemic uncertainty and predicted softmax < 0.4
+5504, 5840, 6277, 7065, 7709, 7978, 8128, 9231, 9282
+- examples with low aleatoric uncertainty and predicted softmax < 0.4
+150, 731, 4119
+
+3) SVHN
+- examples with high categorical softmax of the predicted class:
+16795, 17266, 10539, 16467,   891, 20738,  1922, 24390,  2107, 22982
+- examples with low categorical softmax of the predicted class:
+15083, 5228, 21843, 22965, 16118, 23543, 1690, 4508, 14238, 13311
+- examples with high epistemic uncertainty
+24847, 16808, 6602, 19678, 22071, 24726, 3059, 17986, 10535, 5153
+- examples with high aleatoric uncertainty
+13748, 25802, 10845, 5228, 20658, 1690, 7733, 1216, 22965, 3083
+- examples with low epistemic uncertainty and predicted softmax < 0.2
+1216, 1690, 5228, 6312, 7110, 13311, 22965, 23112, 25802
+- examples with low aleatoric uncertainty and predicted softmax < 0.4
+3544, 5054, 8144, 12011, 12832, 18178, 25569

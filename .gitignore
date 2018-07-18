@@ -15,6 +15,11 @@ datasets/
 # pickle
 *.p
 
+# salience results output
+salience/*/*.p
+salience/*/*.png
+*.npy
+
 # keras
 *.h5
 
