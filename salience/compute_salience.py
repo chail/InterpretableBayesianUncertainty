@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from numpy import ma
 import time
 
 # TODO: cleanup
 import matplotlib.pyplot as plt
 import pickle
+from toolbox import uncertainty
 
 # TODo: change batch size,  _evaluate_prediction_difference(self, tarVals),
 # tarVals, test_per_batch, num_blobs, return a dictionary?
@@ -65,41 +65,13 @@ class UncertaintySalienceAnalyser:
         # (the same weights are used for all inputs in the saliency analysis)
         x_in = np.expand_dims(self.x, axis=0)
         pred_mc = self.tar_func(x_in)
-        self.temp_tar_val = self.compute_uncertainties(pred_mc)
+        self.temp_tar_val = uncertainty.compute_uncertainties(pred_mc)
         # drop the first dimension of the elements in the true target value list,
         # since it is not necessary (since we only forwarded a single feature vector)
         self.temp_tar_val = {key:self.temp_tar_val[key][0]
                              if np.ndim(self.temp_tar_val[key]) > 1
                              else self.temp_tar_val[key]
                              for key in self.temp_tar_val}
-#%%
-# -------------------- METHOD COMPUTING UNCERTAINTIES--------------------------  
-
-    def compute_uncertainties(self, pred_mc):
-        """
-        pred_mc is an N x K x C matrix
-            N is the number of samples
-            K is the number of draws from the posterior weight distribution
-            C is the number of classes in the prediction
-        Returns: a dictionary containing
-            pred:   predictive categorical softmax obtained by integrating over
-            draws from the weights, of shape (N, C)
-            aleatoric:  aleatoric uncertainty, of shape (N,)
-            epistemic:  epistemic uncertainty, of shape (N,)
-            predictive:  predictive uncertainty, of shape (N,)
-        """
-
-        nb_test = pred_mc.shape[1]
-        pred = np.mean(pred_mc,axis=1)
-        predictive_uncertainty = - np.sum(pred * ma.log2(pred).filled(0), axis=-1)
-        aleatoric_uncertainty = - 1/nb_test \
-                * np.sum(pred_mc * ma.log2(pred_mc).filled(0), axis=(1,2))
-        epistemic_uncertainty = predictive_uncertainty - aleatoric_uncertainty
-        return {'pred': pred,
-                'predictive': predictive_uncertainty,
-                'aleatoric': aleatoric_uncertainty,
-                'epistemic': epistemic_uncertainty}
-
 
 # -------------------- METHOD RETURNING EXPLANATIONS --------------------------  
 
@@ -219,7 +191,7 @@ class UncertaintySalienceAnalyser:
         pred_original = np.expand_dims(tarVals[0], axis=0)
         pred_samples = tarVals[1:]
 
-        self.true_tar_val = self.compute_uncertainties(pred_original)
+        self.true_tar_val = uncertainty.compute_uncertainties(pred_original)
         self.true_tar_val = {key:self.true_tar_val[key][0]
                              if np.ndim(self.true_tar_val[key]) > 1
                              else self.true_tar_val[key]
@@ -229,7 +201,7 @@ class UncertaintySalienceAnalyser:
         # integrate across samples from sampler
         prob_not_feat_mc = np.mean(pred_samples, axis=0, keepdims=True)
 
-        result = self.compute_uncertainties(prob_not_feat_mc)
+        result = uncertainty.compute_uncertainties(prob_not_feat_mc)
         # unravel to a 1-dim vector
         result['pred'] = result['pred'].ravel()
 

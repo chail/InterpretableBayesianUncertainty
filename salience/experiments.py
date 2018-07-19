@@ -36,19 +36,20 @@ set_session(tf.Session(config=config))
 # -------------------> CHANGE SETTINGS HERE <--------------------
 
 # pick a dataset to use: ['mnist', 'cifar10', 'svhn']
-dataset = 'mnist'
+dataset = 'cifar10'
 
 # path to saved tf graph with uncertainties
-netname = 'bbalpha-run1'  # directory used for saving
-# optional suffix is appended to each saved file, use None for no suffix
-suffix = 'high_epistemic'
+netname = 'bbalpha-run3'  # directory used for saving
+# optional suffix string is appended to each saved file
+# use None for no suffix
+suffix = 'low_softmax'
 # specify the model to use
 path_to_model = '../models/bbalpha/keras/saved_models/' +\
-        '{}-cnn-alpha0.5-run1/model-test.h5'.format(dataset)
+        '{}-cnn-alpha0.5-run3/model-test.h5'.format(dataset)
 
 # pick test image indices which are analysed
 # (if None, all images will be analysed)
-test_indices = [2293, 2369, 1790, 4078, 1737, 4571, 1247, 9679, 3778, 3853]
+test_indices = [150, 5518, 5504, 4442, 6326]
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
 win_size = 8                 # k in alg 1 (see paper)
@@ -62,10 +63,6 @@ num_samples = 10
 padding_size = 2            # important for conditional sampling,
                             # l = win_size+2*padding_size in alg 1
                             # (see paper)
-
-# set the batch size - the larger, the faster computation will be
-# (if caffe crashes with memory error, reduce the batch size)
-batch_size = 128
 
 # ------------------------ SET-UP ------------------------
 
@@ -109,6 +106,7 @@ for test_idx in test_indices:
     y_true = np.argmax(test[1][test_idx])
     print("Test Image: {}\tPredicted: {}\tTrue:{}"
           .format(test_idx, y_pred, np.argmax(test[1][test_idx])))
+
     # get the path for saving the results
     if sampl_style == 'conditional':
         filename = '{}_test{}_winSize{}_condSampl_numSampl{}_padSize{}'\
@@ -125,13 +123,10 @@ for test_idx in test_indices:
         print('Results for test{} exist, will move to the next'
               ' image.'.format(test_idx))
     elif existing_results:
-        import pdb
-        pdb.set_trace()
         print('Results for test{} exist under a different suffix'
               .format(test_idx))
         print('Linking {} to {}'.format(existing_results[0], save_path+'.p'))
-        os.system('ln -s {} {}'.format(existing_results[0], save_path+'.p'),
-                  shell=True)
+        os.system('ln -s {} {}'.format(existing_results[0], save_path+'.p'))
     else:
         print("Analysing...test image: {}, net: {}, window size: {}, sampling: {}"
               .format(test_idx, netname, win_size, sampl_style))
@@ -164,9 +159,8 @@ for test_idx in test_indices:
     elif existing_results:
         print('Results for test{} exist under a different suffix'
               .format(test_idx))
-        print('Linking {} to {}'.format(existing_results[0], save_path+'.p'))
-        os.system('ln -s {} {}'.format(existing_results[0], save_path+'.p'),
-                  shell=True)
+        print('Linking {} to {}'.format(existing_results[0], save_path+'.png'))
+        os.system('ln -s {} {}'.format(existing_results[0], save_path+'.png'))
     else:
         print("Plotting...test image: {}, net: {}, window size: {}, sampling: {}"
               .format(test_idx, netname, win_size, sampl_style))

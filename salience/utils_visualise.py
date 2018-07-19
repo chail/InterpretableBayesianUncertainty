@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 
 
 def plot_results(x_test_im, y_true, y_pred, diff_list, diff_labels,
-                 classnames=None, save_path=None, true_classnames=None):
+                 classnames=None, save_path=None, true_classnames=None,
+                 cmap='seismic'):
     '''
     Plot the results of the relevance estimation
     Input:
@@ -30,6 +31,7 @@ def plot_results(x_test_im, y_true, y_pred, diff_list, diff_labels,
                             predicted classes, like if network trained to
                             predict cifar10 is provided cifar100 images as
                             input)
+            cmap            string for colormap, 'seismic' or 'bwr' works well
     '''
 
     # check input, make sure it is channels first
@@ -68,14 +70,14 @@ def plot_results(x_test_im, y_true, y_pred, diff_list, diff_labels,
                 'unexpected size of relevance vector'
 
         p = diff.reshape(imsize[0], imsize[1])
-        im = ax[1].imshow(p, interpolation='nearest', cmap='seismic',
+        im = ax[1].imshow(p, interpolation='nearest', cmap=cmap,
                      vmin=-np.max(np.abs(p)), vmax=np.max(np.abs(p)))
         ax[1].set_title('Diff ' + lab)
         ax[1].set_xticks([])
         ax[1].set_yticks([])
         f.colorbar(im,ax=ax[1],fraction=0.046, pad=0.04)
         p = get_overlayed_image(x_test_im, p)
-        ax[2].imshow(p, interpolation='nearest', cmap='seismic',
+        ax[2].imshow(p, interpolation='nearest', cmap=cmap,
                      vmin=-np.max(np.abs(p)), vmax=np.max(np.abs(p)))
         ax[2].set_title('overlay')
         ax[2].set_xticks([])
@@ -85,7 +87,7 @@ def plot_results(x_test_im, y_true, y_pred, diff_list, diff_labels,
         f.savefig(save_path)
         plt.close(f)
 
-def get_overlayed_image(x, c, gray_factor_bg = 0.3):
+def get_overlayed_image(x, c, gray_factor_bg=0.3, alpha=0.6, cmap='seismic'):
     '''
     For an image x and a relevance vector c, overlay the image with the
     relevance vector to visualise the influence of the image pixels.
@@ -101,10 +103,8 @@ def get_overlayed_image(x, c, gray_factor_bg = 0.3):
         x = 1-(1-x)*gray_factor_bg
         x = np.dstack((x,x,x))
 
-    alpha = 0.6
-
     # Construct a colour image to superimpose
-    im = plt.imshow(c, cmap = 'seismic', vmin=-np.max(np.abs(c)), vmax=np.max(np.abs(c)), interpolation='nearest')
+    im = plt.imshow(c, cmap=cmap, vmin=-np.max(np.abs(c)), vmax=np.max(np.abs(c)), interpolation='nearest')
     color_mask = im.to_rgba(c)[:,:,[0,1,2]] # omit alpha channel
 
     # Convert the input image and color mask to Hue Saturation Value (HSV) colorspace

@@ -28,6 +28,7 @@ Indices of some interesting test examples for each dataset:
 - examples with low aleatoric uncertainty and predicted softmax < 0.4
 150, 731, 4119
 
+
 3) SVHN
 - examples with high categorical softmax of the predicted class:
 16795, 17266, 10539, 16467,   891, 20738,  1922, 24390,  2107, 22982
