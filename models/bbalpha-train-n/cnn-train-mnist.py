@@ -129,7 +129,7 @@ train_Y_dup = np.squeeze(np.concatenate(K_mc * [train[1][:, None]], axis=1)) # N
 val_Y_dup = np.squeeze(np.concatenate(K_mc * [validation[1][:, None]], axis=1)) # N x K_mc x D
 
 # training loop
-directory = os.path.join('saved_models',
+directory = os.path.join('saved_models_mnist',
                          '{}-cnn-alpha{}-run{}'.format(dataset, alpha, run),
                          'frac{:.1f}'.format(frac))
 os.makedirs(directory, exist_ok=True)
