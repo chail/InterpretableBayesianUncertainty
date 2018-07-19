@@ -9,7 +9,7 @@ __pycache__/
 
 # models and data
 logs/
-saved_models/
+saved_models*/
 datasets/
 
 # pickle
