@@ -10,7 +10,9 @@ __pycache__/
 # models and data
 logs/
 saved_models*/
-datasets/
+datasets/*
+!datasets/isic2018/Makefile
+!datasets/isic2018/extract_classes.py
 
 # pickle
 *.p
