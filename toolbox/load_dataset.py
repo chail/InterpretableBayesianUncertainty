@@ -3,6 +3,8 @@ from definitions import ROOT_DIR
 import numpy as np
 from keras.utils import np_utils
 import keras.datasets
+from timeit import default_timer as timer
+
 
 
 def load_mnist(flatten, channels_first=False, val_frac=0.1):
@@ -180,7 +182,8 @@ def load_svhn(channels_first=False, val_frac=0.1):
 def load_image_data(dataset, channels_first=False):
     '''
     load train, val, test images and labels of the dataset
-    Input:  dataset         string of either 'mnist', 'cifar10', 'cifar100', 'svhn'
+    Input:  dataset         string of either 'mnist', 'cifar10', 'cifar100',
+                             'svhn', 'isic'
             channels_first  if true, shape of returned images is
                             (n, channels, height, width),
                             otherwise (n, height, width, channels)
@@ -198,6 +201,8 @@ def load_image_data(dataset, channels_first=False):
         return load_cifar100(channels_first)
     elif dataset == 'svhn':
         return load_svhn(channels_first)
+    elif dataset == 'isic':
+        return load_isic(channels_first)
     else:
         return None
 
@@ -252,3 +257,93 @@ def load_cats(channels_first=False):
 
     return cats, y
 
+def load_isic(channels_first=False, ntest=600, nval=600):
+
+    from skimage import io
+    from collections import Counter
+    from imblearn.over_sampling import RandomOverSampler
+
+    classes_dir = os.path.join(ROOT_DIR, 'datasets', 'isic2018', 'classes')
+    img_dir = os.path.join(ROOT_DIR, 'datasets', 'isic2018',
+                           'ISIC2018_Task3_Training_Input')
+
+    classes = ['MEL', 'NV']
+
+    x_data = []
+    y_data = []
+
+    # load images
+    for ii, c in enumerate(classes):
+        start = timer()
+        with open(os.path.join(classes_dir, c + '.txt'), 'r') as f:
+            lines = f.readlines()
+            img_data = [io.imread(os.path.join(img_dir, l.strip() + '.jpg'))
+                        for l in lines]
+            img_data = np.stack(img_data, axis=0)
+            x_data.append(img_data)
+            labels = np.zeros((img_data.shape[0], len(classes)))
+            labels[:, ii] = 1
+            y_data.append(labels)
+        end = timer()
+        print("Loaded {} in {} s".format(c, end-start))
+
+    # reshuffle before splitting into train/test/val
+    np.random.seed(0)
+    for ii in range(len(classes)):
+        assert x_data[ii].shape[0] == y_data[ii].shape[0]
+        n = x_data[ii].shape[0]
+        perm = np.random.permutation(n)
+        x_data[ii] = x_data[ii][perm]
+        y_data[ii] = y_data[ii][perm]
+        if channels_first:
+            x_data[ii] = np.transpose(x_data[ii], axes=(0, 3, 1, 2))
+
+        print(x_data[ii].shape)
+        print(y_data[ii].shape)
+
+
+    ntest_class = int(ntest / len(classes))
+    nval_class = int(nval / len(classes))
+    min_examples = min(len(x) for x in x_data)
+    assert ntest_class + nval_class < min_examples, \
+            "decrease test and val partition sizes"
+
+    # split test and val partitions
+    x_test = np.concatenate([x[:ntest_class] for x in x_data], axis=0)
+    y_test = np.concatenate([y[:ntest_class] for y in y_data], axis=0)
+    x_val = np.concatenate([x[ntest_class:ntest_class+nval_class]
+                            for x in x_data], axis=0)
+    y_val = np.concatenate([y[ntest_class:ntest_class+nval_class]
+                            for y in y_data], axis=0)
+
+    # randomly resample underrepresented classes for train partitions
+    ros = RandomOverSampler(random_state=0)
+    x_remaining = np.concatenate([x[ntest_class+nval_class:] for x in x_data],
+                                 axis=0)
+    y_remaining = np.concatenate([y[ntest_class+nval_class:] for y in y_data],
+                                 axis=0)
+    (n, d1, d2, d3) = x_remaining.shape
+    x_remaining = np.reshape(x_remaining, (n, d1 * d2 * d3))
+    print("Counts before resampling")
+    print(sorted(Counter(np.argmax(y_remaining, axis=1)).items()))
+    x_train, y_train = ros.fit_sample(x_remaining,
+                                      np.argmax(y_remaining, axis=1))
+    print("Counts after resampling")
+    print(sorted(Counter(y_train).items()))
+    x_train = np.reshape(x_train, (-1, d1, d2, d3))
+    y_train = np_utils.to_categorical(y_train, len(classes))
+
+    # reshuffle order within each train/val/test split
+    perm = np.random.permutation(x_train.shape[0])
+    x_train = x_train[perm]
+    y_train = y_train[perm]
+    perm = np.random.permutation(x_val.shape[0])
+    x_val = x_val[perm]
+    y_val = y_val[perm]
+    perm = np.random.permutation(x_test.shape[0])
+    x_test = x_test[perm]
+    y_test = y_test[perm]
+
+    return ((x_train, y_train),
+            (x_val, y_val),
+            (x_test, y_test))
