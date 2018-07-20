@@ -265,7 +265,7 @@ def load_isic(channels_first=False, ntest=600, nval=600):
 
     classes_dir = os.path.join(ROOT_DIR, 'datasets', 'isic2018', 'classes')
     img_dir = os.path.join(ROOT_DIR, 'datasets', 'isic2018',
-                           'ISIC2018_Task3_Training_Input')
+                           'resize')
 
     classes = ['MEL', 'NV']
 
