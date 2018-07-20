@@ -53,7 +53,8 @@ model_paths  = ['../models/bbalpha-train-n/saved_models_train_frac/' +
 
 # pick test image indices which are analysed
 # (if None, all images will be analysed)
-test_indices = [150, 5518, 5504, 4442, 6326]
+# test_indices = [150, 5518, 5504, 4442, 6326]
+test_indices = [3101, 3717, 4663, 9814, 8150]
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
 win_size = 8                 # k in alg 1 (see paper)

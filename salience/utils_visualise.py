@@ -87,7 +87,8 @@ def plot_results(x_test_im, y_true, y_pred, diff_list, diff_labels,
         f.savefig(save_path)
         plt.close(f)
 
-def get_overlayed_image(x, c, gray_factor_bg=0.3, alpha=0.6, cmap='seismic'):
+def get_overlayed_image(x, c, gray_factor_bg=0.3, alpha=0.6, cmap='seismic',
+                        cbar_lim=None):
     '''
     For an image x and a relevance vector c, overlay the image with the
     relevance vector to visualise the influence of the image pixels.
@@ -104,7 +105,10 @@ def get_overlayed_image(x, c, gray_factor_bg=0.3, alpha=0.6, cmap='seismic'):
         x = np.dstack((x,x,x))
 
     # Construct a colour image to superimpose
-    im = plt.imshow(c, cmap=cmap, vmin=-np.max(np.abs(c)), vmax=np.max(np.abs(c)), interpolation='nearest')
+    if not cbar_lim:
+        cbar_lim = np.max(np.abs(c))
+    im = plt.imshow(c, cmap=cmap, vmin=-cbar_lim, vmax=cbar_lim,
+                    interpolation='nearest')
     color_mask = im.to_rgba(c)[:,:,[0,1,2]] # omit alpha channel
 
     # Convert the input image and color mask to Hue Saturation Value (HSV) colorspace
