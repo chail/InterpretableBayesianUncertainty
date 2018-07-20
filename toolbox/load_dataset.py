@@ -257,7 +257,8 @@ def load_cats(channels_first=False):
 
     return cats, y
 
-def load_isic(channels_first=False, ntest=600, nval=600):
+
+def load_isic(channels_first=False, ntest=100, nval=100, sample='undersample'):
 
     from skimage import io
     from collections import Counter
@@ -317,21 +318,33 @@ def load_isic(channels_first=False, ntest=600, nval=600):
                             for y in y_data], axis=0)
 
     # randomly resample underrepresented classes for train partitions
-    ros = RandomOverSampler(random_state=0)
-    x_remaining = np.concatenate([x[ntest_class+nval_class:] for x in x_data],
-                                 axis=0)
-    y_remaining = np.concatenate([y[ntest_class+nval_class:] for y in y_data],
-                                 axis=0)
-    (n, d1, d2, d3) = x_remaining.shape
-    x_remaining = np.reshape(x_remaining, (n, d1 * d2 * d3))
-    print("Counts before resampling")
-    print(sorted(Counter(np.argmax(y_remaining, axis=1)).items()))
-    x_train, y_train = ros.fit_sample(x_remaining,
-                                      np.argmax(y_remaining, axis=1))
-    print("Counts after resampling")
-    print(sorted(Counter(y_train).items()))
-    x_train = np.reshape(x_train, (-1, d1, d2, d3))
-    y_train = np_utils.to_categorical(y_train, len(classes))
+    if sample == 'oversample':
+        ros = RandomOverSampler(random_state=0)
+        x_remaining = np.concatenate([x[ntest_class+nval_class:]
+                                      for x in x_data], axis=0)
+        y_remaining = np.concatenate([y[ntest_class+nval_class:]
+                                      for y in y_data], axis=0)
+        (n, d1, d2, d3) = x_remaining.shape
+        x_remaining = np.reshape(x_remaining, (n, d1 * d2 * d3))
+        print("Counts before resampling")
+        print(sorted(Counter(np.argmax(y_remaining, axis=1)).items()))
+        x_train, y_train = ros.fit_sample(x_remaining,
+                                          np.argmax(y_remaining, axis=1))
+        print("Counts after resampling")
+        print(sorted(Counter(y_train).items()))
+        x_train = np.reshape(x_train, (-1, d1, d2, d3))
+        y_train = np_utils.to_categorical(y_train, len(classes))
+    elif sample == 'undersample':
+        x_remaining = np.concatenate([x[ntest_class+nval_class:min_examples]
+                                      for x in x_data], axis=0)
+        y_remaining = np.concatenate([y[ntest_class+nval_class:min_examples]
+                                      for y in y_data], axis=0)
+        print("Counts with undersampling")
+        print(sorted(Counter(np.argmax(y_remaining, axis=1)).items()))
+        x_train = x_remaining
+        y_train = y_remaining
+    else:
+        raise ValueError("sample should be 'undersample' or 'oversample'")
 
     # reshuffle order within each train/val/test split
     perm = np.random.permutation(x_train.shape[0])
@@ -343,6 +356,13 @@ def load_isic(channels_first=False, ntest=600, nval=600):
     perm = np.random.permutation(x_test.shape[0])
     x_test = x_test[perm]
     y_test = y_test[perm]
+
+    x_train = x_train / 255
+    x_val = x_val / 255
+    x_test = x_test / 255
+
+    print(np.min(x_train))
+    print(np.max(x_train))
 
     return ((x_train, y_train),
             (x_val, y_val),
