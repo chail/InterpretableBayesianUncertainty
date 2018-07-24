@@ -35,24 +35,27 @@ set_session(tf.Session(config=config))
 # ------------------------ CONFIGURATION ------------------------
 # -------------------> CHANGE SETTINGS HERE <--------------------
 
-# pick a dataset to use: ['mnist', 'cifar10', 'svhn']
-dataset = 'cifar10'
+# pick a dataset to use: ['mnist', 'cifar10', 'svhn', 'isic']
+dataset = 'isic'
 
 # path to saved tf graph with uncertainties
-netname = 'bbalpha-run3'  # directory used for saving
+netname = 'bbalpha-run1'  # directory used for saving
 # optional suffix string is appended to each saved file
 # use None for no suffix
 suffix = 'low_softmax'
 # specify the model to use
 path_to_model = '../models/bbalpha/keras/saved_models/' +\
-        '{}-cnn-alpha0.5-run3/model-test.h5'.format(dataset)
+        '{}-cnn-alpha0.5-run1/model-test.h5'.format(dataset)
 
 # pick test image indices which are analysed
 # (if None, all images will be analysed)
-test_indices = [150, 5518, 5504, 4442, 6326]
+# test_indices = [46, 17, 63, 89, 20, 21, 73, 86, 19,  9, 94, 30, 75, 45,  5, 51,
+#                 97,59, 52, 26, 98, 83, 55, 96, 39, 56,  2, 65, 57, 88]
+# test_indices = [94, 30, 75, 45,  5, 51, 97,59, 52, 26]
+test_indices = [98, 83, 55, 96, 39, 56,  2, 65, 57, 88]
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
-win_size = 8                 # k in alg 1 (see paper)
+win_size = 20                 # k in alg 1 (see paper)
 
 # indicate whether windows should be overlapping or not
 overlapping = True

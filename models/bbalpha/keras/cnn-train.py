@@ -20,8 +20,8 @@ if len(sys.argv) != 4:
     print("Call this program like this:\n"
           "    ./cnn-train.py dataset alpha run\n"
           "    e.g. ./cnn-train.py mnist 0.5 1\n"
-          "Dataset is either ['mnist', 'cifar10', 'svhn']"
-         )
+          "Dataset is either ['mnist', 'cifar10', 'svhn', 'isic']"
+          )
     exit()
 
 # extract command line arguments
@@ -38,7 +38,7 @@ if not hasattr(K, "tf"):
                        " to use the TensorFlow backend.")
 
 config = tf.ConfigProto()
-config.gpu_options.allow_growth=True
+config.gpu_options.allow_growth = True
 set_session(tf.Session(config=config))
 
 

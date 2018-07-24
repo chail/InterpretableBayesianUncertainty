@@ -39,7 +39,7 @@ set_session(tf.Session(config=config))
 dataset = 'cifar10'
 
 # path to saved tf graph with uncertainties
-netname = 'bbalpha-run1'  # directory used for saving
+netname = 'bbalpha-run3'  # directory used for saving
 # optional suffix string is appended to each saved file
 # use None for no suffix
 suffix = None
@@ -48,13 +48,12 @@ fractions = ['frac{:.1f}'.format(i/10) for i in range(1, 11)]
 
 # specify the model to use
 model_paths  = ['../models/bbalpha-train-n/saved_models_train_frac/' +
-                '{}-cnn-alpha0.5-run1/{}/model-test.h5'.format(dataset, f)
+                '{}-cnn-alpha0.5-run3/{}/model-test.h5'.format(dataset, f)
                 for f in fractions]
 
 # pick test image indices which are analysed
 # (if None, all images will be analysed)
-# test_indices = [150, 5518, 5504, 4442, 6326]
-test_indices = [3101, 3717, 4663, 9814, 8150]
+test_indices = [150, 5518, 5504, 4442, 6326, 3101, 3717, 4663, 9814, 8150]
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
 win_size = 8                 # k in alg 1 (see paper)

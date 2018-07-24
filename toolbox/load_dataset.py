@@ -209,7 +209,7 @@ def load_image_data(dataset, channels_first=False):
 
 def load_image_labels(dataset):
     '''
-    Input:  dataset         string of either 'mnist', 'cifar10', 'cifar100', 'svhn'
+    Input:  dataset     string of either 'mnist', 'cifar10', 'cifar100', 'svhn'
     Returns:
         list of label names for the provided dataset
     '''
@@ -258,7 +258,7 @@ def load_cats(channels_first=False):
     return cats, y
 
 
-def load_isic(channels_first=False, ntest=100, nval=100, sample='undersample'):
+def load_isic(channels_first=False, ntest=200, nval=200, sample='undersample'):
 
     from skimage import io
     from collections import Counter
@@ -268,7 +268,7 @@ def load_isic(channels_first=False, ntest=100, nval=100, sample='undersample'):
     img_dir = os.path.join(ROOT_DIR, 'datasets', 'isic2018',
                            'resize')
 
-    classes = ['MEL', 'NV']
+    classes = ['MEL', 'NV', 'BCC', 'BKL']
 
     x_data = []
     y_data = []

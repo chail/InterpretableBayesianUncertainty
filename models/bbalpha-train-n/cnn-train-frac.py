@@ -38,9 +38,7 @@ train, validation, _ = load_dataset.load_image_data(dataset,
 # take a fraction of the training data
 n = train[0].shape[0]
 n_frac = int(n * frac)
-perm_ind = np.random.permutation(n)
-train_perm = (train[0][perm_ind], train[1][perm_ind])
-train = (train_perm[0][:n_frac], train_perm[1][:n_frac])
+train = (train[0][:n_frac], train[1][:n_frac])
 
 print("Taking {} of training data...".format(frac))
 print("Items in each class:")
@@ -97,7 +95,7 @@ train_Y_dup = np.squeeze(np.concatenate(K_mc * [train[1][:, None]], axis=1)) # N
 val_Y_dup = np.squeeze(np.concatenate(K_mc * [validation[1][:, None]], axis=1)) # N x K_mc x D
 
 # training loop
-directory = os.path.join('saved_models_train_frac',
+directory = os.path.join('saved_models_train_frac_2',
                          '{}-cnn-alpha{}-run{}'.format(dataset, alpha, run),
                          'frac{:.1f}'.format(frac))
 os.makedirs(directory, exist_ok=True)
