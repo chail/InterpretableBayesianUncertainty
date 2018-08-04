@@ -209,7 +209,8 @@ def load_image_data(dataset, channels_first=False):
 
 def load_image_labels(dataset):
     '''
-    Input:  dataset     string of either 'mnist', 'cifar10', 'cifar100', 'svhn'
+    Input:  dataset     string of either 'mnist', 'cifar10', 'cifar100',
+                        'svhn', 'isic'
     Returns:
         list of label names for the provided dataset
     '''
@@ -230,6 +231,8 @@ def load_image_labels(dataset):
                 'vehicles 2']
     elif dataset == 'svhn':
         return [str(x) for x in range(10)]
+    elif dataset == 'isic':
+        return ['MEL', 'NV', 'BCC', 'BKL']
     else:
         return None
 
