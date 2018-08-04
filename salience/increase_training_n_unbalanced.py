@@ -39,21 +39,23 @@ set_session(tf.Session(config=config))
 dataset = 'cifar10'
 
 # path to saved tf graph with uncertainties
-netname = 'bbalpha-run3'  # directory used for saving
+netname = 'bbalpha-run1'  # directory used for saving
 # optional suffix string is appended to each saved file
 # use None for no suffix
 suffix = None
 
 fractions = ['frac{:.1f}'.format(i/10) for i in range(1, 11)]
 
-# specify the model to use
-model_paths  = ['../models/bbalpha-train-n/saved_models_train_frac/' +
-                '{}-cnn-alpha0.5-run3/{}/model-test.h5'.format(dataset, f)
+# specify the model to use and unbalanced target class
+target = 0
+model_paths  = ['../models/bbalpha-train-n/saved_models_unbalanced/' +
+                '{}-cnn-alpha0.5-run1-target{}/{}/model-test.h5'.format(dataset,
+                                                                        target, f)
                 for f in fractions]
 
 # pick test image indices which are analysed
 # (if None, all images will be analysed)
-test_indices = [150, 5518, 5504, 4442, 6326, 3101, 3717, 4663, 9814, 8150]
+test_indices = [851, 697, 148, 203, 609, 170, 527, 59, 121, 306]
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
 win_size = 8                 # k in alg 1 (see paper)
@@ -115,8 +117,8 @@ for (ii, (path_to_model, frac)) in enumerate(zip(model_paths, fractions)):
 
         # get the path for saving the results
         if sampl_style == 'conditional':
-            filename = '{}_{}_test{}_winSize{}_condSampl_numSampl{}_padSize{}'\
-                    .format(frac, dataset, test_idx, win_size, num_samples, padding_size)
+            filename = 'target{}_{}_{}_test{}_winSize{}_condSampl_numSampl{}_padSize{}'\
+                    .format(target, frac, dataset, test_idx, win_size, num_samples, padding_size)
             path_base = os.path.join(results_dir, filename)
 
         save_path = path_base + '_' + suffix if suffix else path_base
