@@ -10,7 +10,6 @@
 
 Code for the BB-alpha dropout model in keras is modified from [here](https://github.com/YingzhenLi/Dropout_BBalpha)
 
-Code modified from [Predictive Difference Analysis](https://github.com/lmzintgraf/DeepVis-PredDiff)
 
 Credit goes the original authors:
 Li, Y., & Gal, Y. (2017). Dropout inference in bayesian neural networks with alpha-divergences. arXiv preprint arXiv:1703.02914.
