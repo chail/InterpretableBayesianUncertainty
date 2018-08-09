@@ -1,12 +1,18 @@
-Code based on https://github.com/lmzintgraf/DeepVis-PredDiff with heavy modifications.
+# Visualising uncertainty
+
+This code computes the change in uncertainty when pixels are known vs. unknown to generate visualisations.
+
+After training models in `../models/bbalpha/keras/` you can change the settings in `experiments.py` to generate visualisations.
+
+Code modified from [Predictive Difference Analysis](https://github.com/lmzintgraf/DeepVis-PredDiff)
 
 Credit goes the original authors:
 Zintgraf, L. M., Cohen, T. S., Adel, T., & Welling, M. (2017). Visualizing deep neural network decisions: Prediction difference analysis. arXiv preprint arXiv:1702.04595.
 
-Modifications in this version:
+Modifications here:
 - Compute difference in predictive, epistemic, and aleatoric uncertainties based on a Bayesian neural network
 - Use the same draw from the variational weight distribution over all samples when marginalising pixels
-- This means that the network should evaluate only samples over the same patch at each time (change the computation logic)
+- This means that the network should evaluate only samples over the same patch at each time, so the computation logic is changed
 - Modify classifier utilities to handle a BNN
 - Modify visualisation pipeline to show all uncertainties
 
