@@ -49,9 +49,6 @@ path_to_model = '../models/bbalpha/keras/saved_models/' +\
 
 # pick test image indices which are analysed
 # (if None, all images will be analysed)
-# test_indices = [46, 17, 63, 89, 20, 21, 73, 86, 19,  9, 94, 30, 75, 45,  5, 51,
-#                 97,59, 52, 26, 98, 83, 55, 96, 39, 56,  2, 65, 57, 88]
-# test_indices = [94, 30, 75, 45,  5, 51, 97,59, 52, 26]
 test_indices = list(np.random.choice(10000, 10))
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
