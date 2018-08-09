@@ -39,6 +39,8 @@ experimental/
 scratchpad.ipynb
 mnist-mlp-train.ipynb
 mnist-cnn-train.ipynb
+archive/
+experiments/other/
 
 # cluster submission scripts
 *submit.sh
