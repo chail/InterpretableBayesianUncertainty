@@ -237,30 +237,6 @@ def load_image_labels(dataset):
         return None
 
 
-
-def load_cats(channels_first=False):
-
-    from skimage import io
-    directory = os.path.join(ROOT_DIR, 'datasets', 'cats', 'resized')
-    cats = [io.imread(os.path.join(directory, f))
-            for f in os.listdir(directory)]
-    cats = np.stack(cats, axis=0)
-    print(cats.shape)
-
-    cats = cats / 255
-    print(np.max(cats))
-    print(np.min(cats))
-
-    if channels_first:
-        cats = np.transpose(cats, axes=(0, 3, 1, 2))
-
-    n = cats.shape[0]
-    y = np.zeros((n, 10))
-    y[:, 3] = 1 # cat label in cifar 10
-
-    return cats, y
-
-
 def load_isic(channels_first=False, ntest=200, nval=200, sample='undersample'):
 
     from skimage import io

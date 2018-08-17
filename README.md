@@ -9,11 +9,13 @@ Bayesian neural networks provide model predictions as well as uncertainty in the
 ## Roadmap
 - models/
 	- neural network implementations
+	- start by running scripts to train BNN models
 - salience/
 	- code for generating pixel-based visualisations of uncertainty contributions
+	- these experiments can be run after models are trained in the above folder
 - experiments/
 	- ipython notebooks for doing BNN validation experiments, and plotting visualisations
-	- (make sure to generate some salience visualisations above before running expt 3)
+	- make sure to generate some salience visualisations above before running expt 3
 - toolbox/
 	- core functions for loading data and computing uncertainty
 

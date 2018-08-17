@@ -4,6 +4,8 @@ This code computes the change in uncertainty when pixels are known vs. unknown t
 
 After training models in `../models/bbalpha/keras/` you can change the settings in `experiments.py` to generate visualisations.
 
+
+## Credits 
 Code modified from [Predictive Difference Analysis](https://github.com/lmzintgraf/DeepVis-PredDiff)
 
 Credit goes the original authors:

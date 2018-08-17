@@ -10,3 +10,6 @@
 	- experiments showing decomposition of uncertainty
 - results-3/
 	- uncertainty visualisation experiments
+- other/
+	- an experiment to compare keras, tf, and pytorch bb-alpha dropout implementations
+	- a toy gaussian example on epistemic and aleatoric uncertainties
