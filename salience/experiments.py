@@ -38,8 +38,8 @@ set_session(tf.Session(config=config))
 # pick a dataset to use: ['mnist', 'cifar10', 'svhn', 'isic']
 dataset = 'cifar10'
 
-# path to saved tf graph with uncertainties
-netname = 'bbalpha-run1'  # directory used for saving
+# this name is only used for saving results
+netname = 'bbalpha-run1' 
 
 # optional suffix string is appended to each saved file
 # use None for no suffix
