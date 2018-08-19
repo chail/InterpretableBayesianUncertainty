@@ -3,15 +3,9 @@
 import numpy as np
 import time
 
-# TODO: cleanup
 import matplotlib.pyplot as plt
 import pickle
 from toolbox import uncertainty
-
-# TODo: change batch size,  _evaluate_prediction_difference(self, tarVals),
-# tarVals, test_per_batch, num_blobs, return a dictionary?
-
-# TODO: clean up comments
 
 class UncertaintySalienceAnalyser:
     '''
@@ -33,7 +27,7 @@ class UncertaintySalienceAnalyser:
 
     '''
 
-    def __init__(self, x, tar_func, sampler, num_samples=10):
+    def __init__(self, x, tar_func, sampler, num_samples=10, mode='BNN'):
         '''
         Input:
             x           the feature vector for which we want to make the analysis (can be a hidden layer!)
@@ -41,9 +35,8 @@ class UncertaintySalienceAnalyser:
             tar_func    the target function, can be the output of classifier or intermediate layer
                         (must take x as input, keep this in mind when starting at intermediate layers!)
             num_samples the number of samples used for marginalising out features
-            batch_size  batch size for caffe network (in tar_func)
-            prob_tar    boolean, indicates if the target values are probabilities
-                        (not necessarily the case when we look at hidden nodes)
+            mode        'DNN' computes predictive difference only, 'BNN' also
+                        computes uncertainties
         '''
 
         # inputs
@@ -56,6 +49,12 @@ class UncertaintySalienceAnalyser:
         self.channels = x.shape[0]
         self.n_images = 0
 
+        # DNN or BNN mode
+        # DNN computes only pred diff
+        # BNN also conputes uncertainty
+        assert mode=='DNN' or mode=='BNN', "expected mode 'DNN' or 'BNN' only"
+        self.mode=mode
+
         # analysis is done for all channels at once, so divide number of total
         # features by the number of channels
         self.num_feats = int(len(self.x.ravel())/self.channels)
@@ -65,7 +64,10 @@ class UncertaintySalienceAnalyser:
         # (the same weights are used for all inputs in the saliency analysis)
         x_in = np.expand_dims(self.x, axis=0)
         pred_mc = self.tar_func(x_in)
-        self.temp_tar_val = uncertainty.compute_uncertainties(pred_mc)
+        if self.mode == 'BNN':
+            self.temp_tar_val = uncertainty.compute_uncertainties(pred_mc)
+        else:
+            self.temp_tar_val = {'pred': pred_mc}
         # drop the first dimension of the elements in the true target value list,
         # since it is not necessary (since we only forwarded a single feature vector)
         self.temp_tar_val = {key:self.temp_tar_val[key][0]
@@ -151,7 +153,8 @@ class UncertaintySalienceAnalyser:
         x_new = x_new.reshape(self.num_samples, self.x.shape[0],
                               self.x.shape[1], self.x.shape[2])
 
-        # append the original x (so that they use the same weight samples)
+        # append the original x (so that they use the same weight samples
+        #  for a BNN, but handled as normal for a DNN)
         all_x = np.concatenate((np.expand_dims(self.x, axis=0), x_new))
 
         # # uncommenting this block will save images with a patch marginalised
@@ -191,19 +194,27 @@ class UncertaintySalienceAnalyser:
         pred_original = np.expand_dims(tarVals[0], axis=0)
         pred_samples = tarVals[1:]
 
-        self.true_tar_val = uncertainty.compute_uncertainties(pred_original)
-        self.true_tar_val = {key:self.true_tar_val[key][0]
-                             if np.ndim(self.true_tar_val[key]) > 1
-                             else self.true_tar_val[key]
-                             for key in self.true_tar_val}
+        # compute uncertainties only if BNN mode
+        if self.mode == 'BNN':
+            self.true_tar_val = uncertainty.compute_uncertainties(pred_original)
+            self.true_tar_val = {key:self.true_tar_val[key][0]
+                                 if np.ndim(self.true_tar_val[key]) > 1
+                                 else self.true_tar_val[key]
+                                 for key in self.true_tar_val}
 
 
-        # integrate across samples from sampler
-        prob_not_feat_mc = np.mean(pred_samples, axis=0, keepdims=True)
+            # integrate across samples from sampler
+            prob_not_feat_mc = np.mean(pred_samples, axis=0, keepdims=True)
 
-        result = uncertainty.compute_uncertainties(prob_not_feat_mc)
-        # unravel to a 1-dim vector
-        result['pred'] = result['pred'].ravel()
+            result = uncertainty.compute_uncertainties(prob_not_feat_mc)
+            # unravel to a 1-dim vector
+            result['pred'] = result['pred'].ravel()
+        elif self.mode == 'DNN':
+            # use [0] to just get the vector, not the 1xC matrix
+            self.true_tar_val = {'pred': pred_original[0]}
+            # p(c | x_-i) integrate across samples from sampler for x_i
+            prob_not_feat = np.mean(pred_samples, axis=0, keepdims=True)
+            result = {'pred': prob_not_feat.ravel()}
 
         # predictive difference on class probabilities
         # check that the sum to 1 (probabilities)

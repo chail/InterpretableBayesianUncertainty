@@ -59,6 +59,10 @@ def plot_results(x_test_im, y_true, y_pred, diff_list, diff_labels,
 
 
     f, axes = plt.subplots(n_outputs, 3, figsize=(10, 3*n_outputs))
+    # want axes to be an n_outputs x 3 dimension array
+    if np.ndim(axes) == 1:
+        axes = np.expand_dims(axes, axis=0)
+
     # squeeze to remove singleton dim in mnist
     for (ax, diff, lab) in zip(axes, diff_list, diff_labels):
         ax[0].imshow(np.squeeze(x_test_im), interpolation='nearest')
