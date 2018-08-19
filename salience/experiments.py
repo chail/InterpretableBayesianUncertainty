@@ -39,11 +39,11 @@ set_session(tf.Session(config=config))
 dataset = 'cifar10'
 
 # this name is only used for saving results
-netname = 'bbalpha-run1' 
+netname = 'bbalpha-run1'
 
 # optional suffix string is appended to each saved file
 # use None for no suffix
-suffix = 'random'
+suffix = None
 
 # specify the model to use
 path_to_model = '../models/bbalpha/keras/saved_models/' +\
@@ -54,7 +54,7 @@ path_to_model = '../models/bbalpha/keras/saved_models/' +\
 test_indices = list(np.random.choice(10000, 1))
 
 # window size (i.e., the size of the pixel patch that is marginalised out in each step)
-win_size = 8                 # k in alg 1 (see paper)
+win_size = 8                 # k in alg 1 (see original pred diff paper)
 
 # indicate whether windows should be overlapping or not
 overlapping = True
@@ -64,16 +64,16 @@ sampl_style = 'conditional' # (only conditional is implemented here)
 num_samples = 10
 padding_size = 2            # important for conditional sampling,
                             # l = win_size+2*padding_size in alg 1
-                            # (see paper)
+                            # (see original predictive difference paper)
 
 # mode is 'BNN' or 'DNN'
 # 'DNN' mode will only compute predictive difference
 # 'BNN' mode also computes visualisations for 3 types of uncertainty
-mode = 'DNN'
+mode = 'BNN'
 
 # for different networks, implement a new constructor in utlC
 # to load a trained  model and perform a forward pass
-# note: for DNN mode, the output of a forward pass should have dimensions NxC
+# NOTE: for DNN mode, the output of a forward pass should have dimensions NxC
 # and for BNN mode shold be NxKxC where K is number of weight samples and C is
 # number of classes
 net = utlC.BBalpha_keras_net(path_to_model)
@@ -117,10 +117,15 @@ for test_idx in test_indices:
     x_test = test[0][test_idx]
     # get the image for plotting (not preprocessed)
     x_test_im = test[0][test_idx]
+
     # prediction of the network
-    y_mc = target_func(np.expand_dims(x_test, axis=0))
-    y_avg = np.mean(y_mc, axis=1)
-    y_pred = np.argmax(y_avg)
+    if mode == 'BNN':
+        y_mc = target_func(np.expand_dims(x_test, axis=0))
+        y_avg = np.mean(y_mc, axis=1)
+        y_pred = np.argmax(y_avg)
+    elif mode == 'DNN':
+        y_softmax = target_func(np.expand_dims(x_test, axis=0))
+        y_pred = np.argmax(y_softmax)
 
     y_true = np.argmax(test[1][test_idx])
     print("Test Image: {}\tPredicted: {}\tTrue:{}"
@@ -128,17 +133,17 @@ for test_idx in test_indices:
 
     # get the path for saving the results
     if sampl_style == 'conditional':
-        filename = '{}_test{}_winSize{}_condSampl_numSampl{}_padSize{}'\
-                .format(dataset, test_idx, win_size, num_samples, padding_size)
+        if mode == 'BNN':
+            filename = '{}_test{}_winSize{}_condSampl_numSampl{}_padSize{}'\
+                    .format(dataset, test_idx, win_size, num_samples, padding_size)
+        elif mode == 'DNN':
+            filename = '{}_DNN_test{}_winSize{}_condSampl_numSampl{}_padSize{}'\
+                    .format(dataset, test_idx, win_size, num_samples, padding_size)
         path_base = os.path.join(results_dir, filename)
 #    elif sampl_style == 'marginal':
 #        filename = '{}_test{}_winSize{}_margSampl_numSampl{}'\
 #                .format(dataset, test_idx, win_size, num_samples)
 #        path_base = os.path.join(results_dir, filename)
-
-    # add DNN mode to path_base
-    if mode == 'DNN':
-        path_base = path_base + '_DNN'
 
     # add optional suffix to path_base
     save_path = path_base + '_' + suffix if suffix else path_base
