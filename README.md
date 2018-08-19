@@ -30,4 +30,12 @@ Bayesian neural networks provide model predictions as well as uncertainty in the
 		2. add appropriate LD_LIBRARY_PATH to jupyter config ([see here](https://github.com/jupyter/notebook/issues/1290))
 - to start jupyter without the gpu, use `CUDA_VISIBLE_DEVICES="" jupyter notebook`	
 
-
+## Basic Pipeline
+1. Train Models: look for these scripts
+	- `models/bbalpha/keras/cnn-train.py` - trains BNNs
+	- `models/deterministic/cnn-train.py` - trains DNNs
+	- `models/bbalpha-train-n/cnn-train-unbalanced.py` - trains BNNs with increasing training data
+2. Generate Visualisations:
+	- `salience/experiments.py` - generate pred diff and uncertainty visualisations (BNN and DNN modes)
+	- `salience/increase_training_n_unbalanced.py` - generate visualisations with more training data (BNN only)
+3. Run Jupyter notebooks in `./experiments`
